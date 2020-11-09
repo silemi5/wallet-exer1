@@ -1,14 +1,23 @@
+import mongoose from 'mongoose'
+import dotenv from 'dotenv'
+import Account from './models/account'
+
+dotenv.config()
+
 export const resolvers = {
   Query: {
-    account: (_: null, id: { id: string }) => {
-      // TODO: Implement this
-      // Placeholder
+    account: async (_: null, { id, context }: { id: string; context: string }) => {
+      // TODO: Find the cause why context is undefined
+      // WARNING: Don't use `any`
+      console.log(context)
+      const account: any = await Account.findById(id)
+
       return {
-        id: 'INVALID-ID',
-        balance: 0,
-        reservedBalance: 0,
-        virtualBalance: 0
-      }
+        id: account._id,
+        balance: account.balance,
+        reservedBalance: account.getReservedBalance(context),
+        virtualBalance: account.virtualBalance
+      } 
     },
     accounts: () => {
       // TODO: Implement this

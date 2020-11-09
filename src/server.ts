@@ -6,9 +6,9 @@ import dotenv from 'dotenv'
 
 dotenv.config();
 
-const uri: string = process.env.CONNECTION_URI || ""
+const DB_URI: string = process.env.CONNECTION_DB_URI || ""
 
-mongoose.connect(uri)
+mongoose.connect(DB_URI)
 
 const server = new ApolloServer({
   typeDefs,
