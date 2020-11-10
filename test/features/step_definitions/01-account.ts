@@ -35,14 +35,14 @@ let response: {
 Before(async () =>{
   const db_Uri: string = process.env.CONNECTION_DB_URI || ""
   await mongoose.connect(db_Uri)
-
-  // Drop first the collection for fresh start
-  mongoose.connection.db.dropCollection('accounts')
-
-  
 })
 
+// Get an account
 Given('I want to get information about an account', async function () {
+  // Drop first the collection for fresh start
+  await mongoose.connection.db.dropCollection('accounts')
+  await mongoose.connection.db.createCollection('accounts')
+
   // Create a new account, then returns the account ID to use in the tests below.
   const createdAccount = await Account.create({})
   
@@ -84,6 +84,33 @@ Then('I should receive account details such as its ID, balance, reserved balance
   })
 });
 
-After(() => {
-  mongoose.connection.close()
+// Get all accounts
+Given('I want to get all accounts with their information', async function () {
+  // Write code here that turns the phrase above into concrete actions
+  throw new Error('Undefined!')
+});
+
+Then('I should receive all accounts with their details', async function () {
+  // Write code here that turns the phrase above into concrete actions
+  throw new Error('Undefined!')
+});
+
+Then('must be paginated', async function () {
+  // Write code here that turns the phrase above into concrete actions
+  throw new Error('Undefined!')
+});
+
+// Update account
+Given('I want to add {string} to the balance of an account', async function (string) {
+  // Write code here that turns the phrase above into concrete actions
+  throw new Error('Undefined test!');
+});
+
+Then('the balance should increased by {string}', async function (string) {
+  // Write code here that turns the phrase above into concrete actions
+  throw new Error('Undefined test!');
+});
+
+After(async () => {
+  await mongoose.connection.close()
 })
