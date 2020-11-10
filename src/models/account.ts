@@ -1,5 +1,15 @@
 import mongoose from 'mongoose'
 
+const reservedBalanceSchema = new mongoose.Schema({
+  context: String,
+  balance: Number
+})
+
+const virtualBalanceSchema = new mongoose.Schema({
+  context: String,
+  balance: Number
+})
+
 const accountSchema = new mongoose.Schema({
   id: mongoose.Types.ObjectId,
   balance: {
@@ -7,22 +17,10 @@ const accountSchema = new mongoose.Schema({
     default: 0
   },
   reservedBalance: {
-    type: [
-      {
-        context: String!,
-        balance: Number!
-      }
-    ],
-    default: [
-      {
-        context: 'Default',
-        balance: 0
-      }
-    ],
+    type: [reservedBalanceSchema],
   },
   virtualBalance: {
-    type: Number,
-    default: 0
+    type: [virtualBalanceSchema],
   },
   availableBalance: {
     type: Number,
@@ -33,19 +31,15 @@ const accountSchema = new mongoose.Schema({
 accountSchema.methods.getReservedBalance = function (context: string) {
   // TODO: Implement this function after context variable has value
   const reservedBalances: { context: string; balance: number; }[] = this.reservedBalance
-  console.log(context)
-  console.log(reservedBalances.find(x => x.context === context))
 
-  return 0
+  return reservedBalances.find(x => x.context === context)?.balance ?? 0
 }
 
 accountSchema.methods.getVirtualBalance = function (context: string) {
   // TODO: Implement this function after context variable has value
-  const reservedBalances: { context: string; balance: number; }[] = this.reservedBalance
-  console.log(context)
-  console.log(reservedBalances.find(x => x.context === context))
+  const virtualBalance: { context: string; balance: number; }[] = this.virtualBalance
 
-  return 0
+  return virtualBalance.find(x => x.context === context)?.balance ?? 0
 }
 
 export default mongoose.model('Account', accountSchema)

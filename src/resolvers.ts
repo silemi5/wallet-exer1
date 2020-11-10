@@ -6,17 +6,16 @@ dotenv.config()
 
 export const resolvers = {
   Query: {
-    account: async (_: null, { id, context }: { id: string; context: string }) => {
+    account: async (_: null, args: { id: string; context: string }) => {
       // TODO: Find the cause why context is undefined
       // WARNING: Don't use `any`
-      console.log(context)
-      const account: any = await Account.findById(id)
+      const account: any = await Account.findById(args.id)
 
       return {
         id: account._id,
         balance: account.balance,
-        reservedBalance: account.getReservedBalance(context),
-        virtualBalance: account.virtualBalance
+        reservedBalance: account.getReservedBalance(args.context),
+        virtualBalance: account.getVirtualBalance(args.context),
       } 
     },
     accounts: () => {
