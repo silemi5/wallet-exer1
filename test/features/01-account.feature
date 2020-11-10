@@ -7,9 +7,8 @@ Feature: Accounts
 
   Scenario: Get an account
     Given I want to get all accounts with their information
-    Then I should receive all accounts with their details
-    And must be paginated
+    Then I should receive all accounts with their details with pagination
 
   Scenario: Update account
-    Given I want to add "500" to the balance of an account
-    Then the balance should increased by "500"
+    Given I want to add 500.00 to the balance of an account
+    Then the balance should increased by 500.00

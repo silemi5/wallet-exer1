@@ -19,7 +19,7 @@ const instance = axios.create({
 })
 
 let account_id: string
-let response: {
+let accountResponse: {
   "data": {
     "data": {
       "account": {
@@ -31,6 +31,19 @@ let response: {
     }
   }
 }
+let accountsResponse: {
+  "data": {
+    "data": {
+      "accounts": [{
+        "id": string;
+        "balance": number;
+        "reservedBalance": number;
+        "virtualBalance": number;
+      }]
+    }
+  }
+}
+let balance: {before: number; after: number; delta: number}
 
 Before(async () =>{
   const db_Uri: string = process.env.CONNECTION_DB_URI || ""
@@ -62,7 +75,7 @@ When('I try to access it with {string} as the context', async function (string) 
   `
 
   try{
-    response = await instance.post('graphql', {
+    accountResponse = await instance.post('graphql', {
       query: query,
       variables: { id: account_id, context: string }
     })
@@ -70,11 +83,11 @@ When('I try to access it with {string} as the context', async function (string) 
     console.log(e)
   }
 
-  if(!response) throw new Error('Something happened!')
+  if(!accountResponse) throw new Error('Something happened!')
 });
 
 Then('I should receive account details such as its ID, balance, reserved balance, and virtual balance', async function () {
-  const res = response.data.data.account
+  const res = accountResponse.data.data.account
   expect(res).to.have.all.keys('id', 'balance', 'reservedBalance', 'virtualBalance')
   expect(res).to.deep.equal({
     'id': account_id,
@@ -86,29 +99,60 @@ Then('I should receive account details such as its ID, balance, reserved balance
 
 // Get all accounts
 Given('I want to get all accounts with their information', async function () {
-  // Write code here that turns the phrase above into concrete actions
-  throw new Error('Undefined!')
+  // Create 3 accounts
+  for(let x = 0; x < 3; x++){
+    await Account.create({})
+  }
+
+  const query = `
+    query GetAccounts($first: Int, $after: Binary){
+      accounts(first: $first, after: $after){
+        id
+        balance
+      }
+    }
+  `
+
+  accountsResponse = await instance.post('graphql', {
+    query: query,
+    variables: {  }
+  })
+
+  if(!accountsResponse) throw new Error('Something happened!')
+
 });
 
-Then('I should receive all accounts with their details', async function () {
-  // Write code here that turns the phrase above into concrete actions
-  throw new Error('Undefined!')
-});
-
-Then('must be paginated', async function () {
-  // Write code here that turns the phrase above into concrete actions
-  throw new Error('Undefined!')
+Then('I should receive all accounts with their details with pagination', async function () {
+  const res: any = accountsResponse.data.data.accounts
+  expect(res).to.have.all.keys('totalCount', 'edges', 'pageInfo')
+  expect(res.edges).to.be.an('array')
 });
 
 // Update account
-Given('I want to add {string} to the balance of an account', async function (string) {
-  // Write code here that turns the phrase above into concrete actions
-  throw new Error('Undefined test!');
+Given('I want to add {float} to the balance of an account', async function (string) {
+  const account: any = await Account.findById(account_id)
+  balance = account.balance
+  
+  const query = `
+    mutation UpdateAccount($account: ID!, $delta: Float!){
+      updateBalance(account:$account, delta: $delta)
+    }
+  `
+  const request = await instance.post('graphql', {
+    query: query,
+    variables: { account: account_id, delta: string }
+  })
+
+  if(!request) return false
+  else return true
+
 });
 
-Then('the balance should increased by {string}', async function (string) {
-  // Write code here that turns the phrase above into concrete actions
-  throw new Error('Undefined test!');
+Then('the balance should increased by {float}', async function (string) {
+  const account: any = Account.findById(account_id)
+
+  expect(account.balance).to.equal(balance.after)
+
 });
 
 After(async () => {
