@@ -5,17 +5,22 @@ import Account from './models/account'
 dotenv.config()
 
 export const resolvers = {
+  Account: {
+    reservedBalance: async (parent: any, { context }: { context: string }) => {
+      return (await getContext(parent, context)).reservedBalance
+    },
+    virtualBalance: async (parent: any, { context }: any) => {
+      return (await getContext(parent, context)).virtualBalance
+    }
+  },
   Query: {
-    account: async (_: null, args: { id: string; context: string }) => {
-      // TODO: Find the cause why context is undefined
+    account: async (_: null, args: { id: string}) => {
       // WARNING: Don't use `any`
       const account: any = await Account.findById(args.id)
 
       return {
         id: account._id,
         balance: account.balance,
-        reservedBalance: account.getReservedBalance(args.context),
-        virtualBalance: account.getVirtualBalance(args.context),
       } 
     },
     accounts: () => {
@@ -66,5 +71,20 @@ export const resolvers = {
       // TODO: Implement this
       return false;
     },
+  },
+}
+
+const getContext = async (parent: any, context: any) => {
+  parent = await Account.findById(parent.id)
+
+  console.log(parent.contexts)
+  let contextDocument = parent.contexts.find((obj: any) => obj.name === context)
+
+  if(!contextDocument) {
+    contextDocument = { name: context, reservedBalance: 0, virtualBalance: 0 }
+    parent.contexts.push(contextDocument);
+    await parent.save();
   }
+
+  return contextDocument
 }
