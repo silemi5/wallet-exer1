@@ -9,5 +9,5 @@ Feature: Reserve balance
     Then my reserved balance should decrease by 200
 
   Scenario: Release reserved balance for a context
-    Given that I would like to use my remaining reserved balance for other purposes
+    Given that I would like to release my remaining reserved balance for "gacha"
     Then the remaining balance should be added to my balance, while the reserved balance for a given context will be deleted

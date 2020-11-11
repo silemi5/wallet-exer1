@@ -33,6 +33,7 @@ let response: {
 }
 let account
 let balance: { initial: number; delta: number }
+let reservedContext: string
 
 // Create reserved balance
 Given('I would like to set aside {float} for {string} spending, assuming I have {float} in my balance', async function (float, string, float2) {
@@ -68,6 +69,8 @@ Given('I like to use {float} in my reserved balance for {string} in a game', asy
   const account: any = await Account.findById(account_id)
   const reserveBalance: { context: string; balance: number } = account.getReservedBalance(string)
 
+  reservedContext = string
+
   // Get initial reserve balance for an instance
   balance.initial = reserveBalance.balance
   
@@ -92,16 +95,33 @@ Given('I like to use {float} in my reserved balance for {string} in a game', asy
 Then('my reserved balance should decrease by {float}', async function (float) {
   const account: any = await Account.findById(account_id)
 
-  expect(account.balance).to.equal(balance.initial + balance.delta)
+  expect(account.getReservedBalance(reservedContext)).to.equal(balance.initial + balance.delta)
 });
 
 // Release reserved balance
-Given('that I would like to use my remaining reserved balance for other purposes', async function () {
-  // Write code here that turns the phrase above into concrete actions
-  throw new Error('Undefined test!');
+Given('that I would like to release my remaining reserved balance for {string}', async function (string) {
+  // Get an account
+  const account: any = await Account.findById(account_id)
+  const reserveBalance: { context: string; balance: number } = account.getReservedBalance(string)
+  balance.initial = reserveBalance.balance
+  reservedContext = string
+
+  const query = `
+    mutation ReleaseReservedBalance($id: ID!, $context: String!){
+      releaseReservedBalance(account: $id, context: $context)
+    }
+  `
+
+  const response: boolean = await instance.post('graphql', {
+    query: query,
+    variables: { id: account_id, context: string }
+  })
+
+  if(!response) throw new Error('Error releasing reserved balance!')
 });
 
 Then('the remaining balance should be added to my balance, while the reserved balance for a given context will be deleted', async function () {
-  // Write code here that turns the phrase above into concrete actions
-  throw new Error('Undefined test!');
+  const account: any = await Account.findById(account_id)
+
+  expect(account.getReservedBalance(reservedContext)).to.equal(0)
 });
