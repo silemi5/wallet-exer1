@@ -18,6 +18,8 @@ export const resolvers = {
       // WARNING: Don't use `any`
       const account: any = await Account.findById(args.id)
 
+      if(!account) throw new Error('Account not found!')
+
       return {
         id: account._id,
         balance: account.balance,
@@ -43,9 +45,19 @@ export const resolvers = {
     }
   },
   Mutation: {
-    updateBalance: (_: null, { account, delta }: { account: string, delta: number }): boolean => {
-      // TODO: Implement this
-      return false;
+    updateBalance: async (_: null, { account, delta }: { account: string, delta: number }) => {
+      // WARNING: Avoid using `any` XD
+      const acct: any = await Account.findById(account)
+
+      if(!acct) throw new Error('Account not found!')
+
+      if((acct.balance += delta ) < 0) throw new Error('Operation leads to negative balance!')
+
+      // TODO: Operation on model, maybe on a function?
+      acct.balance += delta
+      await acct.save()
+      
+      return true;
     },
     createReservedBalance: (_: null, { account, context, amount }: { account: string, context: string, amount: number }): boolean => {
       // TODO: Implement this
