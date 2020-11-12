@@ -59,29 +59,96 @@ export const resolvers = {
       
       return true;
     },
-    createReservedBalance: (_: null, { account, context, amount }: { account: string, context: string, amount: number }): boolean => {
-      // TODO: Implement this
-      return false;
+    createReservedBalance: async (_: null, { account, context, amount }: { account: string, context: string, amount: number }) => {
+      // WARNING: Avoid using `any` XD
+      const acct: any = await Account.findById(account)
+
+      if(amount < 0) throw new Error('Invalid amount to put reserved balance!')
+
+      let contextDocument = await acct.contexts.find((obj: any) => obj.name === context)
+      if(!context){
+        contextDocument = { name: context, reservedBalance: amount }
+        acct.contexts.push(contextDocument)
+      } else {
+        contextDocument.reservedBalance += amount
+      }
+      
+      await acct.save();
+
+      return true;
     },
-    updateReservedBalance: (_: null, { context, delta }: { context: string, delta: number }): boolean => {
-      // TODO: Implement this
-      return false;
+    updateReservedBalance: async (_: null, { account, context, delta }: { account: string; context: string, delta: number }) => {
+      // WARNING: Avoid using `any` XD
+      const acct: any = await Account.findById(account)
+      const contextDocument = await acct.contexts.find((obj: any) => obj.name === context)
+
+      if(!contextDocument) throw new Error(`Reserved balance for that context doesn't exist!`) 
+      else {
+        if((contextDocument.reservedBalance + delta) < 0) throw new Error('Invalid amount to put reserved balance!')
+        else
+          contextDocument.reservedBalance += delta
+      }
+      
+      await acct.save();
+
+      return true;
     },
-    releaseReservedBalance: (_: null, { context }: { context: string }): boolean => {
-      // TODO: Implement this
-      return false;
+    releaseReservedBalance: async (_: null, { account, context }: { account: string; context: string }) => {
+      // WARNING: Avoid using `any` XD
+      const acct: any = await Account.findById(account)
+      const contextDocument = await acct.contexts.find((obj: any) => obj.name === context)
+
+      if(!contextDocument) throw new Error(`Reserved balance for that context doesn't exist!`) 
+      else {
+        acct.balance += contextDocument.reservedBalance
+        contextDocument.reservedBalance = 0
+      }
+      await acct.save();
+
+      return true;
     },
-    updateVirtualBalance: (_: null, { context, delta }: { context: string, delta: number }): boolean => {
-      // TODO: Implement this
-      return false;
+    updateVirtualBalance: async (_: null, { account, context, delta }: { account: string; context: string, delta: number }) => {
+      // WARNING: Avoid using `any` XD
+      const acct: any = await Account.findById(account)
+      const contextDocument = await acct.contexts.find((obj: any) => obj.name === context)
+
+      if(!contextDocument) throw new Error(`Virtual balance for that context doesn't exist!`) 
+      else {
+        if((contextDocument.virtualBalance + delta) < 0) throw new Error('Invalid amount to put virtual balance!')
+        else
+          contextDocument.virtualBalance += delta
+      }
+      
+      await acct.save();
+
+      return true;
     },
-    cancelVirtualBalance: (_: null, { context }: { context: string }): boolean => {
-      // TODO: Implement this
-      return false;
+    cancelVirtualBalance: async (_: null, { account, context }: { account: string; context: string }) => {
+      // WARNING: Avoid using `any` XD
+      const acct: any = await Account.findById(account)
+      const contextDocument = await acct.contexts.find((obj: any) => obj.name === context)
+
+      if(!contextDocument) throw new Error(`Virtual balance for that context doesn't exist!`) 
+      else {
+        contextDocument.virtualBalance = 0
+      }
+      await acct.save();
+
+      return true;
     },
-    commitVirtualBalance: (_: null, { context }: { context: string }): boolean => {
-      // TODO: Implement this
-      return false;
+    commitVirtualBalance: async (_: null, { account, context }: { account: string; context: string }) => {
+      // WARNING: Avoid using `any` XD
+      const acct: any = await Account.findById(account)
+      const contextDocument = await acct.contexts.find((obj: any) => obj.name === context)
+
+      if(!contextDocument) throw new Error(`Virtual balance for that context doesn't exist!`) 
+      else {
+        acct.balance += contextDocument.virtualBalance
+        contextDocument.virtualBalance = 0
+      }
+      await acct.save();
+
+      return true;
     },
   },
 }
@@ -89,7 +156,6 @@ export const resolvers = {
 const getContext = async (parent: any, context: any) => {
   parent = await Account.findById(parent.id)
 
-  console.log(parent.contexts)
   let contextDocument = parent.contexts.find((obj: any) => obj.name === context)
 
   if(!contextDocument) {

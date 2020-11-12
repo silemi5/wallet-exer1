@@ -2,8 +2,14 @@ import mongoose from 'mongoose'
 
 const contextSchema = new mongoose.Schema({
   name: String,
-  reservedBalance: Number,
-  virtualBalance: Number
+  reservedBalance: {
+    type: Number,
+    default: 0
+  },
+  virtualBalance: {
+    type: Number,
+    default: 0
+  }
   },
   { _id: false }
 )
