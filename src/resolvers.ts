@@ -25,23 +25,39 @@ export const resolvers = {
         balance: account.balance,
       } 
     },
-    accounts: () => {
-      // TODO: Implement this
-      // Placeholders
-      return [
-        {
-          id: 'INVALID-ID-1',
-          balance: 0,
-          reservedBalance: 0,
-          virtualBalance: 0
-        },
-        {
-          id: 'INVALID-ID-2',
-          balance: 0,
-          reservedBalance: 0,
-          virtualBalance: 0
-        },
-      ]
+    accounts: async (_: null, args: { first: number; after: string }) => {
+      const accounts = await Account.find({ _id: { $gt: args.after }, balance: { $gt: 0 } }).limit(args.first)
+      console.log(accounts)
+      const accountsCount: number = await Account.countDocuments({ balance: { $gt: 0 } })
+       
+      
+      const accountsConnectionEdge: any = []
+
+      accounts.forEach((currentValue: any) => {
+        accountsConnectionEdge.push({
+          node: {
+            id: currentValue._id,
+            balance: currentValue.balance
+          },
+          cursor: currentValue._id
+        })
+      })
+
+      const hasNextPage = () => {
+        if(((accountsCount - args.first) - accounts.length) > 0)
+          return true
+        else 
+          return false
+      }
+
+      return {
+        totalCount: accountsCount,
+        edges: accountsConnectionEdge,
+        pageInfo: {
+          endCursor: accountsConnectionEdge[accountsConnectionEdge.length - 1].cursor,
+          hasNextPage: hasNextPage
+        }
+      }
     }
   },
   Mutation: {
