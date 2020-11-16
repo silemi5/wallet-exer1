@@ -64,12 +64,12 @@ Given('I want to get information about an account', async function () {
 
 When('I try to access it with {string} as the context', async function (string) {
   const query = `
-    query GetAccount($id: ID!, $context: String!) {
+    query GetAccount($id: ID!) {
       account(id: $id) {
         id,
         balance,
-        reservedBalance(context: $context),
-        virtualBalance(context: $context)
+        reservedBalance(context: "${string}"),
+        virtualBalance(context: "${string}")
       }
     }
   `
@@ -77,7 +77,7 @@ When('I try to access it with {string} as the context', async function (string) 
   try{
     accountResponse = await instance.post('graphql', {
       query: query,
-      variables: { id: account_id, context: string }
+      variables: { id: account_id }
     })
   } catch (e) {
     console.log(e)
@@ -101,14 +101,24 @@ Then('I should receive account details such as its ID, balance, reserved balance
 Given('I want to get all accounts with their information', async function () {
   // Create 3 accounts
   for(let x = 0; x < 3; x++){
-    await Account.create({})
+    await Account.create({ balance: Math.random() * 1000 })
   }
 
   const query = `
     query GetAccounts($first: Int, $after: Binary){
       accounts(first: $first, after: $after){
-        id
-        balance
+        totalCount
+        edges{
+          node{
+            id
+            balance
+          }
+          cursor
+        }
+        pageInfo{
+          endCursor
+          hasNextPage
+        }
       }
     }
   `
@@ -148,7 +158,7 @@ Given('I want to add {float} to the balance of an account', async function (stri
 
 });
 
-Then('the balance should increased by {float}', async function (string) {
+Then('the balance should increased by {float}', async function (float) {
   const account: any = Account.findById(account_id)
 
   expect(account.balance).to.equal(balance.after)

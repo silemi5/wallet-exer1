@@ -37,11 +37,13 @@ let reservedContext: string
 
 // Create reserved balance
 Given('I would like to set aside {float} for {string} spending, assuming I have {float} in my balance', async function (float, string, float2) {
-  balance.initial = float2
-  balance.delta = float
+  balance = {
+    initial: float2,
+    delta: float
+  }
 
   // Create account for this instance
-  account = await Account.create({ balance: float2 })
+  account = await Account.create({ balance: balance.initial })
   account_id = account._id
 
   const query = `
@@ -61,18 +63,20 @@ Given('I would like to set aside {float} for {string} spending, assuming I have 
 Then('a reserved balance is created with the amount of {float} while my balance should be subtracted by that amount.', async function (float) {
   const account: any = await Account.findById(account_id)
 
-  expect(account.balance).to.equal(balance.initial + balance.delta)
+  expect(account.balance).to.equal(balance.initial - balance.delta)
 });
 
 // Update reserved balance
 Given('I like to use {float} in my reserved balance for {string} in a game', async function (float, string) {
   const account: any = await Account.findById(account_id)
-  const reserveBalance: { context: string; balance: number } = account.getReservedBalance(string)
+  const contextDocument = account.contexts.find((obj: any) => obj.name === string)
+
+  if(!contextDocument) throw new Error('Context not found!')
 
   reservedContext = string
 
   // Get initial reserve balance for an instance
-  balance.initial = reserveBalance.balance
+  balance.initial = contextDocument.reservedBalance
   
   // Multiply float by -1 to make it negative
   balance.delta = float * -1
@@ -87,6 +91,8 @@ Given('I like to use {float} in my reserved balance for {string} in a game', asy
     query: query,
     variables: { id: account_id, context: string, delta: balance.delta }
   })
+
+  console.log(response)
 
   if(!response) throw new Error('Error updating reserved balance!')
 
