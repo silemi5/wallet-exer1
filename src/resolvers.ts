@@ -25,12 +25,19 @@ export const resolvers = {
         balance: account.balance,
       } 
     },
-    accounts: async (_: null, args: { first: number; after: string }) => {
-      const accounts = await Account.find({ _id: { $gt: args.after }, balance: { $gt: 0 } }).limit(args.first)
-      console.log(accounts)
+    accounts: async (_: null, args: { first: number | undefined; after: string | undefined }) => {
+      if(args.first === undefined){
+        args.first = 10
+      }
+
+      let accounts
+      if(args.after === undefined){
+        accounts = await Account.find({ balance: { $gt: 0 } }).limit(args.first)
+      } else {
+        accounts = await Account.find({ _id: { $gt: args.after }, balance: { $gt: 0 } }).limit(args.first)
+      }
       const accountsCount: number = await Account.countDocuments({ balance: { $gt: 0 } })
        
-      
       const accountsConnectionEdge: any = []
 
       accounts.forEach((currentValue: any) => {
@@ -44,12 +51,12 @@ export const resolvers = {
       })
 
       const hasNextPage = () => {
-        if(((accountsCount - args.first) - accounts.length) > 0)
+        if(((accountsCount - (args.first || 10)) - accounts.length) > 0)
           return true
         else 
           return false
       }
-
+      
       return {
         totalCount: accountsCount,
         edges: accountsConnectionEdge,
