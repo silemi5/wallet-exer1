@@ -89,13 +89,14 @@ export const resolvers = {
       if(amount < 0) throw new Error('Invalid amount to put reserved balance!')
 
       let contextDocument = await acct.contexts.find((obj: any) => obj.name === context)
-      if(!context){
+      if(!contextDocument){
         contextDocument = { name: context, reservedBalance: amount }
         acct.contexts.push(contextDocument)
       } else {
         contextDocument.reservedBalance += amount
       }
       
+      acct.balance -= amount
       await acct.save();
 
       return true;
