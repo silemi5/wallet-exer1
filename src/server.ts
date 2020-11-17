@@ -15,7 +15,9 @@ const server = new ApolloServer({
   resolvers,
   context: ({ req }) => {
     const auth = req.headers.authorization || '';
+    const x_request_id = req.headers['x-request-id']
     return {
+      x_request_id,
       auth
     }
   }

@@ -1,6 +1,8 @@
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 import Account from './models/account'
+import { v5 as uuid } from 'uuid'
+import { cache } from './cache'
 
 dotenv.config()
 
@@ -25,7 +27,18 @@ export const resolvers = {
         balance: account.balance,
       } 
     },
-    accounts: async (_: null, args: { first: number | undefined; after: string | undefined }) => {
+    accounts: async (_: any, args: { first: number | undefined; after: string | undefined }, context: { x_request_id: string | undefined }) => {
+      const key = generateKey('account', args)
+
+      // X-REQUEST-ID is given
+      if(context.x_request_id === key){
+        // Find in cache
+       const cachedResponse: any = await findInCache(key)
+       if(cachedResponse){
+         return cachedResponse
+       }
+      }
+
       if(args.first === undefined){
         args.first = 10
       }
@@ -56,8 +69,8 @@ export const resolvers = {
         else 
           return false
       }
-      
-      return {
+
+      const response = {
         totalCount: accountsCount,
         edges: accountsConnectionEdge,
         pageInfo: {
@@ -65,6 +78,8 @@ export const resolvers = {
           hasNextPage: hasNextPage
         }
       }
+
+      return cacheResponse('accounts', key, args, response)
     }
   },
   Mutation: {
@@ -189,4 +204,18 @@ const getContext = async (parent: any, context: any) => {
   }
 
   return contextDocument
+}
+
+const findInCache = async (key: string) => {
+  return await cache.get(key)
+}
+
+const generateKey = (request: string, args: any) => {
+  const NAMESPACE = "ee5e7a7c-d081-4e86-84aa-a9dfdb956c4c"
+  return uuid(`${request}:${args}`, NAMESPACE);
+}
+
+const cacheResponse = (request: string, key: string, args: any, response: any) => {
+  cache.set(key, response)
+  return response
 }
