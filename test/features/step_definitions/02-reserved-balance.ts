@@ -1,8 +1,7 @@
-import { Before, Given, When, Then, After } from 'cucumber'
+import { Given, Then } from 'cucumber'
 import axios from 'axios'
 import chai from "chai";
 import dotenv from 'dotenv'
-import mongoose from 'mongoose'
 import Account from '../../../src/models/account'
 
 dotenv.config();
@@ -18,20 +17,8 @@ const instance = axios.create({
   }
 })
 
-let account_id: string
-let response: {
-  "data": {
-    "data": {
-      "account": {
-        "id": string;
-        "balance": number;
-        "reservedBalance": number;
-        "virtualBalance": number;
-      }
-    }
-  }
-}
 let account
+let account_id: string
 let balance: { initial: number; delta: number }
 let reservedContext: string
 
@@ -82,17 +69,15 @@ Given('I like to use {float} in my reserved balance for {string} in a game', asy
   balance.delta = float * -1
 
   const query = `
-    mutation UpdateReservedBalance($id: ID!, context: String!, delta: Float!){
-      updateReservedBalance(id: $id, context: $context, delta: $delta)
+    mutation UpdateReservedBalance($account: ID!, $context: String!, $delta: Float!){
+      updateReservedBalance(account: $account, context: $context, delta: $delta)
     }
   `
 
   const response: boolean = await instance.post('graphql', {
     query: query,
-    variables: { id: account_id, context: string, delta: balance.delta }
+    variables: { account: account_id, context: string, delta: balance.delta }
   })
-
-  console.log(response)
 
   if(!response) throw new Error('Error updating reserved balance!')
 
@@ -100,17 +85,21 @@ Given('I like to use {float} in my reserved balance for {string} in a game', asy
 
 Then('my reserved balance should decrease by {float}', async function (float) {
   const account: any = await Account.findById(account_id)
+  const contextDocument = account.contexts.find((obj: any) => obj.name === reservedContext)
 
-  expect(account.getReservedBalance(reservedContext)).to.equal(balance.initial + balance.delta)
+  if(!contextDocument) throw new Error('Context not found!')
+
+  expect(contextDocument.reservedBalance).to.equal(balance.initial + balance.delta)
 });
 
 // Release reserved balance
 Given('that I would like to release my remaining reserved balance for {string}', async function (string) {
   // Get an account
-  const account: any = await Account.findById(account_id)
-  const reserveBalance: { context: string; balance: number } = account.getReservedBalance(string)
-  balance.initial = reserveBalance.balance
   reservedContext = string
+  const account: any = await Account.findById(account_id)
+  const contextDocument: { context: string; reservedBalance: number } = await account.contexts.find((obj: any) => obj.name === reservedContext)
+  balance.initial = contextDocument.reservedBalance;
+  balance.delta = contextDocument.reservedBalance;
 
   const query = `
     mutation ReleaseReservedBalance($id: ID!, $context: String!){
@@ -128,6 +117,7 @@ Given('that I would like to release my remaining reserved balance for {string}',
 
 Then('the remaining balance should be added to my balance, while the reserved balance for a given context will be deleted', async function () {
   const account: any = await Account.findById(account_id)
+  const contextDocument: any = await account.contexts.find((obj: any) => obj.name === reservedContext)
 
-  expect(account.getReservedBalance(reservedContext)).to.equal(0)
+  expect(contextDocument.reservedBalance).to.equal(0);
 });
