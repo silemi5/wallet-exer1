@@ -16,22 +16,36 @@ export const resolvers = {
     }
   },
   Query: {
-    account: async (_: null, args: { id: string}) => {
+    account: async (_: null, args: { id: string}, clientContext: { x_request_id: string | undefined }) => {
+      const key = generateKey('account', args)
+
+      // X-REQUEST-ID is given
+      if(clientContext.x_request_id === key){
+        // Find in cache
+       const cachedResponse: any = await findInCache(key)
+       if(cachedResponse){
+         return cachedResponse
+       }
+      }
+
       // WARNING: Don't use `any`
       const account: any = await Account.findById(args.id)
 
       if(!account) throw new Error('Account not found!')
 
-      return {
+      const response = {
         id: account._id,
         balance: account.balance,
-      } 
+      }
+
+      // caches the response then returns it to the client
+      return cacheResponse(key, response)
     },
-    accounts: async (_: any, args: { first: number | undefined; after: string | undefined }, context: { x_request_id: string | undefined }) => {
-      const key = generateKey('account', args)
+    accounts: async (_: any, args: { first: number | undefined; after: string | undefined }, clientContext: { x_request_id: string | undefined }) => {
+      const key = generateKey('accounts', args)
 
       // X-REQUEST-ID is given
-      if(context.x_request_id === key){
+      if(clientContext.x_request_id === key){
         // Find in cache
        const cachedResponse: any = await findInCache(key)
        if(cachedResponse){
@@ -79,7 +93,8 @@ export const resolvers = {
         }
       }
 
-      return cacheResponse('accounts', key, args, response)
+       // caches the response then returns it to the client
+      return cacheResponse(key, response)
     }
   },
   Mutation: {
@@ -215,7 +230,7 @@ const generateKey = (request: string, args: any) => {
   return uuid(`${request}:${args}`, NAMESPACE);
 }
 
-const cacheResponse = (request: string, key: string, args: any, response: any) => {
+const cacheResponse = (key: string, response: any) => {
   cache.set(key, response)
   return response
 }
