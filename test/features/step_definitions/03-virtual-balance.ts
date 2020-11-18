@@ -104,12 +104,11 @@ Then('that virtual balance should be resetted to {float}', async function (float
 
 // Commit virtual balance
 Given('I like to commit my virtual balance on the {string} context of {float}', async function (string, float) {
-  // Create account for this instance
   virtualContext = string
   const context = {
     name: virtualContext,
     reservedBalance: 0,
-    virtualBalance: 1000
+    virtualBalance: float
   }
   
   balance = {
@@ -117,6 +116,7 @@ Given('I like to commit my virtual balance on the {string} context of {float}', 
     delta: context.virtualBalance
   }
 
+  // Create account for this instance
   account = await Account.create({})
   account_id = account._id
   account.contexts.push(context)

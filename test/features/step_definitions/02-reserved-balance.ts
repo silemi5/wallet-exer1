@@ -24,6 +24,7 @@ let reservedContext: string
 
 // Create reserved balance
 Given('I would like to set aside {float} for {string} spending, assuming I have {float} in my balance', async function (float, string, float2) {
+  reservedContext = string
   balance = {
     initial: float2,
     delta: float
@@ -49,8 +50,10 @@ Given('I would like to set aside {float} for {string} spending, assuming I have 
 
 Then('a reserved balance is created with the amount of {float} while my balance should be subtracted by that amount.', async function (float) {
   const account: any = await Account.findById(account_id)
+  const contextDocument: any = account.contexts.find((obj: any) => obj.name === reservedContext)
 
   expect(account.balance).to.equal(balance.initial - balance.delta)
+  expect(contextDocument.reservedBalance).to.equal(float)
 });
 
 // Update reserved balance
@@ -98,8 +101,10 @@ Given('that I would like to release my remaining reserved balance for {string}',
   reservedContext = string
   const account: any = await Account.findById(account_id)
   const contextDocument: { context: string; reservedBalance: number } = await account.contexts.find((obj: any) => obj.name === reservedContext)
-  balance.initial = contextDocument.reservedBalance;
-  balance.delta = contextDocument.reservedBalance;
+  balance = {
+    initial: account.balance,
+    delta: contextDocument.reservedBalance,
+  }
 
   const query = `
     mutation ReleaseReservedBalance($id: ID!, $context: String!){
@@ -120,4 +125,5 @@ Then('the remaining balance should be added to my balance, while the reserved ba
   const contextDocument: any = await account.contexts.find((obj: any) => obj.name === reservedContext)
 
   expect(contextDocument.reservedBalance).to.equal(0);
+  expect(account.balance).to.equal(balance.initial + balance.delta)
 });
